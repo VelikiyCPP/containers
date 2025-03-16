@@ -279,7 +279,7 @@ namespace np {
             return *this;
         }
 
-        vector& operator=(const vector&& other) {
+        vector& operator=(vector&& other) {
             pointer new_arr = allocator_traits::allocate(allocator_, other.capacity_);
     
             size_type index = 0;
@@ -341,54 +341,36 @@ namespace np {
             data_ = new_arr;
             capacity_ = new_capacity;
         }
-
+        
         void push_back(const_reference element) {
-            if (size_ == capacity_) {
-                reserve(capacity_ ? capacity_ * 2 : 1);
-            }
-
-            typename std::allocator_traits<Allocator>::pointer ptr = allocator_traits::allocate(allocator_, 1);
-            try {
-                std::allocator_traits<Allocator>::construct(allocator_, ptr, element);
-
-                data_[size_++] = *ptr;
-            }
-            catch (...) {
-                allocator_traits::deallocate(allocator_, ptr, 1);
-                throw;
-            }
+            emplace_back(element);
         }
-
+        
         void push_back(value_type&& element) {
-            if (size_ == capacity_){
-                reserve(capacity_ ? capacity_ * 2 : 1);
-            }
-
-            typename std::allocator_traits<Allocator>::pointer ptr = allocator_traits::allocate(allocator_, 1);
-            try {
-                std::allocator_traits<Allocator>::construct(allocator_, ptr, std::move(element));
-
-                data_[size_++] = *ptr;
-            } catch(...) {
-                    allocator_traits::deallocate(allocator_, ptr, 1);
-                    throw;
-            }
+            emplace_back(std::move(element));
         }
-
+        
+        template<typename... Args>
+        void emplace_back(Args&&... args) {
+            if (size_ == capacity_) reserve(capacity_ ? capacity_ * 2 : 1);
+            allocator_traits::construct(allocator_, data_ + size_, std::forward<Args>(args)...);
+            ++size_;
+        }
+        
         void pop_back() {
             allocator_traits::destroy(allocator_, data_ + --size_);
         }
-
+        
         void clear() {
             for (; size_ > 0; --size_) {
                 allocator_traits::destroy(allocator_, data_ + size_ - 1);
             }
         }
-
+        
         void shrink_to_fit() {
             if (size_ < capacity_) {
                 pointer new_arr = allocator_traits::allocate(allocator_, size_);
-
+                
                 size_type index = 0;
                 try {
                     for (; index < size_; ++index) {
@@ -398,17 +380,17 @@ namespace np {
                     for (; index > 0; --index) {
                         allocator_traits::destroy(allocator_, new_arr + index - 1);
                     }
-
+                    
                     allocator_traits::deallocate(allocator_, new_arr, size_);
                     throw;
                 }
-
+                
                 for (size_type i = size_; i < capacity_; ++i) {
                     allocator_traits::destroy(allocator_, data_ + i);
                 }
-
+                
                 allocator_traits::deallocate(allocator_, data_, capacity_);
-
+                
                 data_ = new_arr;
                 capacity_ = size_;
             }
@@ -596,4 +578,16 @@ namespace np {
             }
         }
     };
+}
+
+int main(void) {
+	np::vector<int> vec;
+	vec.push_back(100);
+	vec.push_back(200);
+	
+	for(auto _ : vec) {
+          std::cout << _ << std::endl;
+        }
+	
+	return 0;
 }
