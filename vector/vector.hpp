@@ -122,6 +122,14 @@ namespace np {
                 ptr_ -= value;
                 return *this;
             }
+            
+            reference_type operator[](const difference_type index) noexcept {
+                return ptr_[index];
+            }
+            
+            const_reference operator[](const difference_type index) const noexcept {
+                return ptr_[index];
+            }
             /***************************/
 
 
@@ -172,9 +180,9 @@ namespace np {
         using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
     public:
-        vector() = default;
+        vector() noexcept = default;
 
-        explicit vector( const allocator_type& alloc = Allocator()) {
+        explicit vector(const allocator_type& alloc = Allocator())  {
             resize(alloc);
         }
 
@@ -191,7 +199,7 @@ namespace np {
         }
 
         template <class InputIt>
-        vector(InputIt first, InputIt last) {
+        vector(InputIt first, InputIt last) noexcept {
             if (first == last) {
                 return;
             }
@@ -204,7 +212,7 @@ namespace np {
             }
         }
 
-        vector (const vector& other) {
+        vector (const vector& other) noexcept {
             Allocator new_allocator = allocator_traits::select_on_container_copy_construction()
                 ? other.allocator_
                 : allocator_;
@@ -351,14 +359,10 @@ namespace np {
             size_type index = 0;
             try {
                 for (; index < size_; ++index) {
-                    allocator_traits::construct(allocator_, new_arr + index, data_[index]);
+                    allocator_traits::construct(allocator_, new_arr + index, std::move(data_[index]));
                 }
             }
             catch (...) {
-                for (size_type i = 0; i < index; ++i) {
-                    allocator_traits::destroy(allocator_, new_arr + i);
-                }
-
                 allocator_traits::deallocate(allocator_, new_arr, capacity_);
                 throw;
             }
